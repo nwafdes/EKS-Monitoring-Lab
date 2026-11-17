@@ -1,0 +1,9 @@
+# kubectl --context worker apply -k apps/demo
+# (vmservicescrape.yaml is NOT listed here: its CRD only exists after the
+#  VictoriaMetrics operator is installed on the worker. Apply it separately.)
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - podinfo.yaml
+  - loadgen.yaml

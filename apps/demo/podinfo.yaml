@@ -1,0 +1,65 @@
+# podinfo: a small Go web app that exposes Prometheus metrics on :9797/metrics
+# (HTTP request duration histogram + Go runtime metrics). Upstream: github.com/stefanprodan/podinfo
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: podinfo
+  namespace: demo
+  labels:
+    app: podinfo
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: podinfo
+  template:
+    metadata:
+      labels:
+        app: podinfo
+    spec:
+      containers:
+        - name: podinfod
+          image: ghcr.io/stefanprodan/podinfo:6.15.0
+          command:
+            - ./podinfo
+            - --port=9898
+            - --port-metrics=9797
+            - --level=info
+          ports:
+            - name: http
+              containerPort: 9898
+            - name: http-metrics
+              containerPort: 9797
+          livenessProbe:
+            exec:
+              command: ["podcli", "check", "http", "localhost:9898/healthz"]
+            initialDelaySeconds: 5
+          readinessProbe:
+            exec:
+              command: ["podcli", "check", "http", "localhost:9898/readyz"]
+            initialDelaySeconds: 5
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: podinfo
+  namespace: demo
+  labels:
+    app: podinfo # the VMServiceScrape selects the Service by this label
+spec:
+  selector:
+    app: podinfo
+  ports:
+    - name: http
+      port: 9898
+      targetPort: http
+    - name: http-metrics # the VMServiceScrape scrapes this port by NAME
+      port: 9797
+      targetPort: http-metrics

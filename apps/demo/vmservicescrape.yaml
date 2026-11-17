@@ -1,0 +1,16 @@
+# Tells the worker's vmagent to scrape podinfo.
+# Apply AFTER the VictoriaMetrics operator + VMAgent are installed on the worker:
+#   kubectl --context worker apply -f apps/demo/vmservicescrape.yaml
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMServiceScrape
+metadata:
+  name: podinfo
+  namespace: demo
+spec:
+  selector:
+    matchLabels:
+      app: podinfo # matches the Service's labels (not the pods')
+  endpoints:
+    - port: http-metrics # Service port NAME, not number
+      path: /metrics
+      interval: 30s

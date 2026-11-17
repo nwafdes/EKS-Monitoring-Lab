@@ -59,6 +59,23 @@ kubectl --context central apply -f k8s/storageclass-gp3.yaml   # default Storage
 
 To skip the prompt: `terraform apply -var create_worker=no`.
 
+## Demo app (worker cluster)
+
+`apps/demo/` contains **podinfo**, a small web app that exposes Prometheus metrics on `:9797/metrics`, plus a **loadgen** that keeps sending it traffic: normal requests, some HTTP 500s and some slow 1-second requests.
+
+```bash
+# 1. The app (works before any monitoring is installed)
+kubectl --context worker apply -k apps/demo
+kubectl --context worker -n demo get pods
+
+# 2. Check it exposes metrics
+kubectl --context worker -n demo port-forward svc/podinfo 9797:9797 &
+curl -s localhost:9797/metrics | grep ^http_request_duration_seconds_count
+
+# 3. AFTER the VictoriaMetrics operator + VMAgent are on the worker
+kubectl --context worker apply -f apps/demo/vmservicescrape.yaml
+```
+
 ## Teardown (do this in order)
 
 `terraform destroy` only removes what Terraform created. Anything Kubernetes created in AWS must go first, or the destroy gets stuck or leaves costs behind:

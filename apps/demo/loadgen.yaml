@@ -1,0 +1,41 @@
+# Sends steady traffic to podinfo so the metrics move:
+# normal requests every second, a 500 error every 5th loop, a 1s slow request every 7th loop.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: loadgen
+  namespace: demo
+  labels:
+    app: loadgen
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: loadgen
+  template:
+    metadata:
+      labels:
+        app: loadgen
+    spec:
+      containers:
+        - name: loadgen
+          image: curlimages/curl:8.11.1
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              i=0
+              while true; do
+                i=$((i+1))
+                curl -s -o /dev/null http://podinfo:9898/
+                curl -s -o /dev/null http://podinfo:9898/api/info
+                [ $((i % 5)) -eq 0 ] && curl -s -o /dev/null http://podinfo:9898/status/500
+                [ $((i % 7)) -eq 0 ] && curl -s -o /dev/null http://podinfo:9898/delay/1
+                sleep 1
+              done
+          resources:
+            requests:
+              cpu: 5m
+              memory: 8Mi
+            limits:
+              cpu: 50m
+              memory: 32Mi
