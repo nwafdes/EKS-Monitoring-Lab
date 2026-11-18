@@ -1,0 +1,36 @@
+vmsingle:
+  enabled: false          # work runs the cluster version
+vmcluster:
+  enabled: true
+  spec:
+    retentionPeriod: "7d"
+    replicationFactor: 1  # must be <= vmstorage replicas
+    vmstorage:
+      replicaCount: 1     # work: 3
+      storage:
+        volumeClaimTemplate:
+          spec:
+            resources:
+              requests:
+                storage: 5Gi
+    vmselect:
+      replicaCount: 1     # work: 2
+    vminsert:
+      replicaCount: 1     # work: 2
+vmagent:
+  spec:
+    externalLabels:
+      cluster: central
+kubeEtcd:               # EKS hides the control plane: these can't be scraped
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeControllerManager:
+  enabled: false
+victoria-metrics-operator:
+  admissionWebhooks:
+    enabled: false
+  crds:
+    cleanup:
+      image:
+        tag: v1.35.6
